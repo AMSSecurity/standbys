@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SAMFS Shift Tracker</title>
+<meta name="description" content="AMS Security Fire Standby Log">
+<meta name="theme-color" content="#1F3864">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SAMFS">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1F3864;
+    --navy-light: #2d4f8a;
+    --teal: #0F4761;
+    --red: #C00000;
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --border: #e2e4e9;
+    --border-dark: #c8ccd6;
+    --text: #1a1d23;
+    --text-2: #4b5163;
+    --text-3: #8b90a0;
+    --owe-bg: #fff1f3;
+    --owe-border: #fcc8d0;
+    --owe-text: #b91c3a;
+    --owed-bg: #f0fdf8;
+    --owed-border: #99e6ce;
+    --owed-text: #0d7a52;
+    --upcoming-bg: #fff8ed;
+    --upcoming-border: #fcd58a;
+    --upcoming-text: #b45309;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; font-size: 14px; }
+
+  /* HEADER */
+  .app-header {
+    background: var(--navy);
+    color: white;
+    padding: 16px 16px 12px;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 2px 8px rgba(31,56,100,0.15);
+  }
+  .app-header-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+  .app-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.2px; }
+  .app-subtitle { font-size: 0.7rem; opacity: 0.65; margin-top: 1px; }
+  .header-pills { display: flex; gap: 6px; }
+  .header-pill { background: rgba(255,255,255,0.12); border-radius: 50px; padding: 4px 10px; font-size: 0.68rem; font-weight: 500; display: flex; align-items: center; gap: 5px; }
+  .header-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* BODY */
+  .body { max-width: 860px; margin: 0 auto; padding: 14px 12px 80px; }
+
+  /* ACTION BUTTONS */
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .btn-row-4 { grid-template-columns: 1fr 1fr; }
+  @media(max-width:420px){ .btn-row-3 { grid-template-columns: 1fr 1fr; } }
+  .btn-action {
+    border: none; font-family: 'Inter', sans-serif; font-weight: 600;
+    font-size: 0.82rem; padding: 12px 10px; border-radius: var(--radius);
+    cursor: pointer; text-align: center; line-height: 1.3;
+    -webkit-appearance: none; transition: opacity 0.15s;
+  }
+  .btn-action:active { opacity: 0.82; }
+  .btn-upcoming { background: var(--upcoming-bg); border: 1.5px solid var(--upcoming-border); color: var(--upcoming-text); }
+  .btn-leave { background: var(--owed-bg); border: 1.5px solid var(--owed-border); color: var(--owed-text); }
+  .btn-balances { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1d4ed8; }
+  .btn-standby { background: var(--navy); color: white; box-shadow: 0 2px 8px rgba(31,56,100,0.2); }
+  .btn-icon { font-size: 1.1rem; display: block; margin-bottom: 3px; }
+  .btn-sub { font-size: 0.65rem; font-weight: 400; opacity: 0.7; display: block; margin-top: 2px; }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px; }
+  .toolbar-left { display: flex; gap: 6px; align-items: center; }
+  .toolbar select, .toolbar input[type="text"] {
+    background: var(--surface); border: 1px solid var(--border-dark);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 0.75rem;
+    padding: 6px 8px; outline: none;
+  }
+  .toolbar input[type="text"] { width: 110px; }
+  .toolbar input::placeholder { color: var(--text-3); }
+  .print-btn { padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark); background: var(--surface); color: var(--text-2); font-size: 0.75rem; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+  /* SECTION */
+  .section { margin-bottom: 20px; }
+  .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); }
+  .section-count { background: var(--border); border-radius: 50px; padding: 1px 8px; font-size: 0.68rem; font-weight: 600; color: var(--text-2); }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media(max-width: 520px) { .two-col { grid-template-columns: 1fr; gap: 8px; } }
+  .col-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .col-badge { background: var(--border); border-radius: 50px; padding: 1px 7px; font-size: 0.65rem; font-weight: 600; color: var(--text-2); }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 12px; margin-bottom: 8px; }
+  .card.owe { background: var(--owe-bg); border-color: var(--owe-border); border-left: 3px solid var(--red); }
+  .card.owed { background: var(--owed-bg); border-color: var(--owed-border); border-left: 3px solid #0d7a52; }
+  .card.upcoming-card { background: var(--upcoming-bg); border: 1px solid var(--upcoming-border); border-left: 3px solid #d97706; }
+  .card.upcoming-card.upcoming-owe { background: var(--owe-bg); border: 1px solid var(--owe-border); border-left: 3px solid var(--red); }
+  .card.upcoming-card.upcoming-owed { background: var(--owed-bg); border: 1px solid var(--owed-border); border-left: 3px solid #0d7a52; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .card-name { font-weight: 700; font-size: 0.92rem; color: var(--text); }
+  .card-shift-badge { font-size: 0.65rem; font-weight: 600; padding: 2px 8px; border-radius: 50px; }
+  .badge-day { background: #dbeafe; color: #1d4ed8; }
+  .badge-night { background: #ede9fe; color: #5b21b6; }
+  .badge-other { background: var(--border); color: var(--text-2); }
+  .card-date { font-size: 0.72rem; color: var(--text-3); margin-bottom: 4px; }
+  .card-notes { font-size: 0.72rem; color: var(--text-3); font-style: italic; margin-bottom: 6px; }
+  .upcoming-tag { display: inline-block; font-size: 0.65rem; font-weight: 700; background: var(--upcoming-border); color: var(--upcoming-text); border-radius: 4px; padding: 2px 7px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .upcoming-owe .upcoming-tag { background: var(--owe-border); color: var(--owe-text); }
+  .upcoming-owed .upcoming-tag { background: var(--owed-border); color: var(--owed-text); }
+  .upcoming-owe .cal-tag { background: #ffeaea; color: var(--red); }
+  .upcoming-owed .cal-tag { background: var(--owed-bg); color: var(--owed-text); }
+  .upcoming-owe .btn-done { border-color: var(--owe-border); background: var(--owe-bg); color: var(--owe-text); }
+  .upcoming-owed .btn-done { border-color: var(--owed-border); background: var(--owed-bg); color: var(--owed-text); }
+  .cal-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 0.65rem; font-weight: 500; background: var(--owed-bg); color: var(--owed-text); border-radius: 4px; padding: 2px 7px; margin-bottom: 6px; }
+  .card-actions { display: flex; gap: 6px; }
+  .btn-done { flex: 1; padding: 7px 8px; border-radius: var(--radius-sm); border: 1.5px solid var(--owed-border); background: var(--owed-bg); color: var(--owed-text); font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.75rem; cursor: pointer; }
+  .btn-done:active { opacity: 0.8; }
+  .btn-paid-back { flex: 1; padding: 7px 8px; border-radius: var(--radius-sm); border: 1.5px solid var(--owed-border); background: var(--owed-bg); color: var(--owed-text); font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.75rem; cursor: pointer; }
+  .btn-paid-back:active { opacity: 0.8; }
+  .btn-icon-sm { padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark); background: var(--surface); color: var(--text-2); font-size: 0.8rem; cursor: pointer; }
+  .btn-icon-sm:active { background: var(--bg); }
+  .empty-state { text-align: center; padding: 18px 10px; color: var(--text-3); font-size: 0.75rem; border: 1.5px dashed var(--border-dark); border-radius: var(--radius); }
+
+  /* HISTORY */
+  .hist-wrap { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px; }
+  .hist-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px; }
+  .hist-toggle-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); }
+  .hist-chev { font-size: 0.65rem; color: var(--text-3); transition: transform 0.2s; }
+  .hist-chev.open { transform: rotate(180deg); }
+  .hist-grid { display: none; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .hist-grid.open { display: grid; }
+  @media(max-width:520px){ .hist-grid { grid-template-columns: 1fr !important; } }
+  .hist-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 12px; opacity: 0.7; }
+  .hist-card.owe { border-left: 3px solid var(--red); }
+  .hist-card.owed { border-left: 3px solid #0d7a52; }
+  .settled-tag { display: inline-block; font-size: 0.65rem; font-weight: 600; background: var(--owed-bg); color: var(--owed-text); border-radius: 4px; padding: 2px 7px; margin: 4px 0 7px; }
+  .hist-actions { display: flex; gap: 6px; }
+  .btn-restore { padding: 5px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark); background: transparent; color: var(--text-2); font-size: 0.72rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .btn-purge { padding: 5px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark); background: transparent; color: var(--text-3); font-size: 0.72rem; cursor: pointer; }
+  .btn-clear { margin-top: 12px; padding: 6px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark); background: transparent; color: var(--text-3); font-size: 0.75rem; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,20,35,0.5); backdrop-filter: blur(3px); z-index: 100; align-items: flex-end; justify-content: center; }
+  @media(min-width:520px){ .modal-overlay { align-items: center; } }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px 18px 32px; width: 100%; max-width: 460px; animation: slideUp 0.22s ease; }
+  @media(min-width:520px){ .modal { border-radius: 16px; } }
+  @keyframes slideUp { from { transform:translateY(30px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+  .modal-handle { width: 36px; height: 4px; background: var(--border-dark); border-radius: 2px; margin: 0 auto 16px; }
+  @media(min-width:520px){ .modal-handle { display: none; } }
+  .modal h2 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .modal-sub { font-size: 0.72rem; color: var(--text-3); margin-bottom: 16px; }
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 14px; background: var(--bg); border-radius: var(--radius-sm); padding: 3px; }
+  .toggle-btn { flex: 1; padding: 8px; border-radius: 5px; border: none; background: transparent; color: var(--text-2); font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; }
+  .toggle-btn.active-owe { background: var(--surface); color: var(--red); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .toggle-btn.active-owed { background: var(--surface); color: var(--owed-text); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 0.7rem; font-weight: 600; color: var(--text-2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .field input { width: 100%; background: var(--bg); border: 1.5px solid var(--border-dark); border-radius: var(--radius-sm); color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.88rem; padding: 10px 11px; outline: none; -webkit-appearance: none; }
+  .field input:focus { border-color: var(--navy); background: var(--surface); }
+  .field .hint { font-size: 0.68rem; color: var(--text-3); margin-top: 4px; line-height: 1.4; }
+  .cal-preview-box { background: var(--upcoming-bg); border: 1px solid var(--upcoming-border); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 12px; font-size: 0.75rem; color: var(--upcoming-text); line-height: 1.5; display: none; }
+  .cal-preview-box strong { display: block; font-weight: 600; margin-top: 2px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .btn-cancel { flex: 1; padding: 11px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-dark); background: transparent; color: var(--text-2); font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+  .btn-save { flex: 2; padding: 11px; border-radius: var(--radius-sm); border: none; background: var(--navy); color: white; font-family: 'Inter', sans-serif; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+  .btn-save:active { background: var(--navy-light); }
+  .btn-save.save-upcoming { background: #d97706; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; border-radius: 50px; padding: 9px 18px; font-size: 0.78rem; font-weight: 500; z-index: 200; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+  .toast.show { opacity: 1; }
+
+
+  /* BACKUP/RESTORE */
+  .backup-bar { display:flex; gap:6px; margin-bottom:14px; }
+  .btn-backup { padding:6px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-dark); background:var(--surface); color:var(--text-2); font-size:0.75rem; cursor:pointer; font-family:'Inter',sans-serif; }
+  .btn-restore-data { padding:6px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-dark); background:var(--surface); color:var(--text-2); font-size:0.75rem; cursor:pointer; font-family:'Inter',sans-serif; }
+  .restore-area { display:none; margin-bottom:14px; }
+  .restore-area textarea { width:100%; height:80px; border:1.5px solid var(--border-dark); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:0.72rem; padding:8px; resize:none; outline:none; }
+  .restore-area textarea:focus { border-color:var(--navy); }
+  .restore-btns { display:flex; gap:6px; margin-top:6px; }
+  .btn-restore-confirm { flex:1; padding:7px; border-radius:var(--radius-sm); border:none; background:var(--navy); color:white; font-family:'Inter',sans-serif; font-weight:600; font-size:0.78rem; cursor:pointer; }
+  .btn-restore-cancel { padding:7px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-dark); background:transparent; color:var(--text-2); font-family:'Inter',sans-serif; font-size:0.78rem; cursor:pointer; }
+
+
+  /* REC LEAVE MODAL */
+  .leave-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,20,35,0.5); backdrop-filter:blur(3px); z-index:100; align-items:flex-end; justify-content:center; }
+  @media(min-width:520px){ .leave-modal-overlay { align-items:center; } }
+  .leave-modal-overlay.open { display:flex; }
+  .leave-modal { background:var(--surface); border-radius:16px 16px 0 0; width:100%; max-width:500px; max-height:88vh; display:flex; flex-direction:column; animation:slideUp 0.22s ease; }
+  @media(min-width:520px){ .leave-modal { border-radius:16px; max-height:82vh; } }
+  .leave-modal-head { background:var(--navy); color:white; padding:16px 18px 14px; border-radius:16px 16px 0 0; flex-shrink:0; }
+  @media(min-width:520px){ .leave-modal-head { border-radius:16px 16px 0 0; } }
+  .leave-modal-handle { width:36px; height:4px; background:rgba(255,255,255,0.3); border-radius:2px; margin:0 auto 12px; }
+  @media(min-width:520px){ .leave-modal-handle { display:none; } }
+  .leave-modal-title { font-size:1rem; font-weight:700; }
+  .leave-modal-sub { font-size:0.7rem; opacity:0.6; margin-top:2px; }
+  .leave-next-banner { background:var(--owed-bg); border-bottom:1px solid var(--owed-border); padding:12px 18px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .leave-next-label { font-size:0.62rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--owed-text); margin-bottom:3px; }
+  .leave-next-dates { font-size:0.88rem; font-weight:700; color:var(--text); }
+  .leave-next-dur { font-size:0.68rem; color:var(--text-3); margin-top:1px; }
+  .leave-next-countdown { text-align:right; }
+  .leave-countdown-num { font-size:1.4rem; font-weight:700; color:var(--owed-text); line-height:1; }
+  .leave-countdown-lbl { font-size:0.62rem; color:var(--owed-text); opacity:0.7; }
+  .leave-scroll { overflow-y:auto; flex:1; padding:14px 18px 24px; }
+  .leave-table { width:100%; border-collapse:collapse; }
+  .leave-table thead tr { border-bottom:2px solid var(--border-dark); }
+  .leave-table th { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-3); padding:0 8px 8px; text-align:left; }
+  .leave-table th:first-child { width:30px; }
+  .leave-table th:last-child { text-align:center; }
+  .leave-table td { padding:9px 8px; font-size:0.8rem; color:var(--text); border-bottom:1px solid var(--border); vertical-align:middle; }
+  .leave-table tr:last-child td { border-bottom:none; }
+  .leave-table tr.lv-past td { color:var(--text-3); }
+  .leave-table tr.lv-next { background:var(--owed-bg); }
+  .leave-table tr.lv-next td { color:var(--owed-text); font-weight:600; }
+  .leave-table tr.lv-current { background:var(--upcoming-bg); }
+  .lv-badge { display:inline-block; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:50px; text-transform:uppercase; letter-spacing:0.3px; }
+  .lv-badge-past { background:var(--border); color:var(--text-3); }
+  .lv-badge-next { background:var(--owed-bg); color:var(--owed-text); border:1px solid var(--owed-border); }
+  .lv-badge-current { background:var(--upcoming-bg); color:var(--upcoming-text); border:1px solid var(--upcoming-border); }
+  .lv-badge-future { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+  .leave-modal-footer { padding:12px 18px; border-top:1px solid var(--border); flex-shrink:0; }
+  .btn-leave-close { width:100%; padding:11px; border-radius:var(--radius-sm); border:1.5px solid var(--border-dark); background:transparent; color:var(--text-2); font-family:'Inter',sans-serif; font-weight:600; font-size:0.85rem; cursor:pointer; }
+
+
+  /* BALANCES MODAL */
+  .bal-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,20,35,0.5); backdrop-filter:blur(3px); z-index:100; align-items:flex-end; justify-content:center; }
+  @media(min-width:520px){ .bal-modal-overlay { align-items:center; } }
+  .bal-modal-overlay.open { display:flex; }
+  .bal-modal { background:var(--surface); border-radius:16px 16px 0 0; width:100%; max-width:500px; max-height:90vh; display:flex; flex-direction:column; animation:slideUp 0.22s ease; }
+  @media(min-width:520px){ .bal-modal { border-radius:16px; max-height:84vh; } }
+  .bal-modal-head { background:var(--navy); color:white; padding:16px 18px 0; border-radius:16px 16px 0 0; flex-shrink:0; }
+  @media(min-width:520px){ .bal-modal-head { border-radius:16px 16px 0 0; } }
+  .bal-modal-handle { width:36px; height:4px; background:rgba(255,255,255,0.3); border-radius:2px; margin:0 auto 12px; }
+  @media(min-width:520px){ .bal-modal-handle { display:none; } }
+  .bal-modal-title { font-size:1rem; font-weight:700; margin-bottom:2px; }
+  .bal-modal-sub { font-size:0.7rem; opacity:0.6; margin-bottom:12px; }
+  /* TABS */
+  .bal-tabs { display:flex; gap:2px; padding:0 0 0; }
+  .bal-tab { flex:1; padding:9px 6px; border:none; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-family:'Inter',sans-serif; font-size:0.75rem; font-weight:600; cursor:pointer; border-radius:8px 8px 0 0; transition:all 0.15s; }
+  .bal-tab.active { background:var(--surface); color:var(--navy); }
+  /* BODY */
+  .bal-scroll { overflow-y:auto; flex:1; padding:16px 18px 8px; }
+  /* BALANCE CARD */
+  .bal-summary { border-radius:var(--radius); padding:14px 16px; margin-bottom:14px; }
+  .bal-summary.lsl { background:#eff6ff; border:1px solid #bfdbfe; }
+  .bal-summary.ret { background:var(--owed-bg); border:1px solid var(--owed-border); }
+  .bal-summary.phl { background:var(--upcoming-bg); border:1px solid var(--upcoming-border); }
+  .bal-summary-top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .bal-summary-label { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+  .bal-summary.lsl .bal-summary-label { color:#1d4ed8; }
+  .bal-summary.ret .bal-summary-label { color:var(--owed-text); }
+  .bal-summary.phl .bal-summary-label { color:var(--upcoming-text); }
+  .bal-balance-num { font-size:1.8rem; font-weight:700; color:var(--text); line-height:1; }
+  .bal-balance-unit { font-size:0.75rem; color:var(--text-3); margin-top:2px; }
+  .bal-accrual-note { font-size:0.68rem; color:var(--text-3); margin-top:6px; }
+  .bal-next-accrual { font-size:0.68rem; font-weight:600; margin-top:3px; }
+  .bal-summary.lsl .bal-next-accrual { color:#1d4ed8; }
+  .bal-summary.ret .bal-next-accrual { color:var(--owed-text); }
+  /* SET BASE */
+  .bal-set-row { display:flex; gap:6px; margin-bottom:14px; align-items:center; }
+  .bal-set-row input { flex:1; background:var(--bg); border:1.5px solid var(--border-dark); border-radius:var(--radius-sm); color:var(--text); font-family:'Inter',sans-serif; font-size:0.85rem; padding:8px 10px; outline:none; -webkit-appearance:none; }
+  .bal-set-row input:focus { border-color:var(--navy); background:var(--surface); }
+  .bal-set-btn { padding:8px 14px; border-radius:var(--radius-sm); border:none; background:var(--navy); color:white; font-family:'Inter',sans-serif; font-weight:600; font-size:0.78rem; cursor:pointer; white-space:nowrap; }
+  /* DEDUCT / ADD */
+  .bal-action-row { display:flex; gap:6px; margin-bottom:16px; }
+  .bal-action-row input { flex:1; background:var(--bg); border:1.5px solid var(--border-dark); border-radius:var(--radius-sm); color:var(--text); font-family:'Inter',sans-serif; font-size:0.85rem; padding:8px 10px; outline:none; -webkit-appearance:none; }
+  .bal-action-row input:focus { border-color:var(--navy); background:var(--surface); }
+  .bal-deduct-btn { padding:8px 12px; border-radius:var(--radius-sm); border:1.5px solid var(--owe-border); background:var(--owe-bg); color:var(--owe-text); font-family:'Inter',sans-serif; font-weight:600; font-size:0.75rem; cursor:pointer; white-space:nowrap; }
+  .bal-add-btn { padding:8px 12px; border-radius:var(--radius-sm); border:1.5px solid var(--owed-border); background:var(--owed-bg); color:var(--owed-text); font-family:'Inter',sans-serif; font-weight:600; font-size:0.75rem; cursor:pointer; white-space:nowrap; }
+  /* LOG */
+  .bal-log-label { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-3); margin-bottom:8px; }
+  .bal-log-entry { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.78rem; }
+  .bal-log-entry:last-child { border-bottom:none; }
+  .bal-log-desc { color:var(--text-2); }
+  .bal-log-date { font-size:0.68rem; color:var(--text-3); margin-top:1px; }
+  .bal-log-amt { font-weight:700; }
+  .bal-log-amt.neg { color:var(--red); }
+  .bal-log-amt.pos { color:var(--owed-text); }
+  .bal-log-del { background:none; border:none; color:var(--text-3); cursor:pointer; font-size:0.8rem; padding:2px 6px; }
+  .bal-empty { text-align:center; padding:16px; color:var(--text-3); font-size:0.75rem; }
+  /* FOOTER */
+  .bal-modal-footer { padding:12px 18px; border-top:1px solid var(--border); flex-shrink:0; }
+  .btn-bal-close { width:100%; padding:11px; border-radius:var(--radius-sm); border:1.5px solid var(--border-dark); background:transparent; color:var(--text-2); font-family:'Inter',sans-serif; font-weight:600; font-size:0.85rem; cursor:pointer; }
+
+  @media print {
+    .app-header,.btn-row,.toolbar,.card-actions,.modal-overlay,.hist-wrap { display:none!important; }
+    body { background: white; }
+    .card { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="app-header-inner">
+    <div>
+      <div class="app-title">SAMFS Shift Tracker</div>
+      <div class="app-subtitle">Fire Standby Log</div>
+    </div>
+    <div class="header-pills" id="header-pills"></div>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- ACTION BUTTONS -->
+  <div class="btn-row btn-row-4">
+    <button class="btn-action btn-upcoming" onclick="openUpcomingModal()">
+      <span class="btn-icon">⏰</span>
+      Log Upcoming Shift
+      <span class="btn-sub">Future standby → calendar</span>
+    </button>
+    <button class="btn-action btn-standby" onclick="openStandbyModal()">
+      <span class="btn-icon">+</span>
+      Record Standby
+      <span class="btn-sub">Past shift → tracker</span>
+    </button>
+    <button class="btn-action btn-leave" onclick="openLeaveModal()">
+      <span class="btn-icon">🏖️</span>
+      Rec Leave
+      <span class="btn-sub" id="leave-btn-sub">Loading...</span>
+    </button>
+    <button class="btn-action btn-balances" onclick="openBalancesModal()">
+      <span class="btn-icon">📋</span>
+      Leave Balances
+      <span class="btn-sub" id="balances-btn-sub">LSL · Ret · PHL</span>
+    </button>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <select id="sort-sel" onchange="render()">
+        <option value="date-asc">Oldest first</option>
+        <option value="date-desc">Newest first</option>
+        <option value="name">Name A–Z</option>
+      </select>
+      <input type="text" id="filter-in" placeholder="Search..." oninput="render()">
+    </div>
+    <button class="print-btn" onclick="window.print()">Print</button>
+  </div>
+
+
+  <!-- BACKUP / RESTORE -->
+  <div class="backup-bar">
+    <button class="btn-backup" onclick="backupData()">⬇ Backup</button>
+    <button class="btn-restore-data" onclick="document.getElementById('restore-file-input').click()">⬆ Restore</button>
+  </div>
+  <input type="file" id="restore-file-input" accept=".json,application/json" style="display:none" onchange="restoreFromFile(event)">
+
+  <!-- UPCOMING -->
+  <div class="section" id="upcoming-section" style="display:none">
+    <div class="section-header">
+      <span class="section-label" style="color:var(--upcoming-text)">Upcoming</span>
+      <span class="section-count" id="upcoming-badge" style="background:var(--upcoming-bg);color:var(--upcoming-text)">0</span>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="col-label" style="color:var(--owe-text)">I'm Doing <span class="col-badge" id="up-owe-badge">0</span></div>
+        <div id="up-owe-list"></div>
+      </div>
+      <div>
+        <div class="col-label" style="color:var(--owed-text)">They're Doing <span class="col-badge" id="up-owed-badge">0</span></div>
+        <div id="up-owed-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTSTANDING -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Outstanding</span>
+      <span class="section-count" id="past-badge">0</span>
+    </div>
+    <div class="two-col" id="past-cols"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="hist-wrap" id="hist-wrap" style="display:none">
+    <div class="hist-toggle" onclick="toggleHist()">
+      <span class="hist-toggle-label">Paid Back History <span id="hist-count"></span></span>
+      <span class="hist-chev" id="hist-chev">▼</span>
+    </div>
+    <div class="hist-grid" id="hist-grid"></div>
+    <button class="btn-clear" onclick="clearHist()">Clear all history</button>
+  </div>
+
+</div>
+
+<!-- UPCOMING MODAL -->
+<div class="modal-overlay" id="upcoming-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Log Upcoming Shift</h2>
+    <p class="modal-sub">Future standby — will be added to your calendar</p>
+    <div class="toggle-row">
+      <button class="toggle-btn active-owe" id="up-btn-owe" onclick="setUpType('owe')">I'm Doing It</button>
+      <button class="toggle-btn" id="up-btn-owed" onclick="setUpType('owed')">They're Doing It</button>
+    </div>
+    <div class="field">
+      <label>Person's Name</label>
+      <select id="up-name-sel" onchange="handleUpName()" style="width:100%;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:6px;color:var(--text);font-family:Inter,sans-serif;font-size:0.88rem;padding:10px 11px;outline:none;">
+        <option value="">— Select a name —</option>
+        <option value="Boss">Boss</option>
+        <option value="Dingo">Dingo</option>
+        <option value="Harry">Harry</option>
+        <option value="Hutchy">Hutchy</option>
+        <option value="Hyde">Hyde</option>
+        <option value="Kerwick">Kerwick</option>
+        <option value="Oliver">Oliver</option>
+        <option value="Tighe">Tighe</option>
+        <option value="__other__">+ Other (type a name)</option>
+      </select>
+      <input type="text" id="up-name" placeholder="Type name..." style="display:none;margin-top:6px" oninput="updateUpPreview()">
+    </div>
+    <div class="field">
+      <label>Shift Type</label>
+      <input type="text" id="up-shift" placeholder="D = Day shift · N = Night shift" oninput="updateUpPreview()">
+      <div class="hint">D → Day shift 07:00–17:00 &nbsp;·&nbsp; N → Night shift 17:00–07:00</div>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="up-date" oninput="updateUpPreview()">
+    </div>
+    <div class="field">
+      <label>Notes (optional)</label>
+      <input type="text" id="up-notes" placeholder="Any extra details...">
+    </div>
+    <div class="cal-preview-box" id="up-cal-preview">
+      Calendar event will be created:
+      <strong id="up-cal-title"></strong>
+      <span id="up-cal-times" style="font-size:0.7rem;color:var(--upcoming-text);opacity:0.85"></span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Cancel</button>
+      <button class="btn-save save-upcoming" onclick="saveUpcoming()">Save + Add to Calendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- STANDBY MODAL -->
+<div class="modal-overlay" id="standby-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="sb-title">Record Standby</h2>
+    <p class="modal-sub">A past standby — track who owes who</p>
+    <div class="toggle-row">
+      <button class="toggle-btn active-owe" id="sb-btn-owe" onclick="setSbType('owe')">I Owe Them</button>
+      <button class="toggle-btn" id="sb-btn-owed" onclick="setSbType('owed')">They Owe Me</button>
+    </div>
+    <div class="field">
+      <label>Person's Name</label>
+      <select id="sb-name-sel" onchange="handleSbName()" style="width:100%;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:6px;color:var(--text);font-family:Inter,sans-serif;font-size:0.88rem;padding:10px 11px;outline:none;">
+        <option value="">— Select a name —</option>
+        <option value="Boss">Boss</option>
+        <option value="Dingo">Dingo</option>
+        <option value="Harry">Harry</option>
+        <option value="Hutchy">Hutchy</option>
+        <option value="Hyde">Hyde</option>
+        <option value="Kerwick">Kerwick</option>
+        <option value="Oliver">Oliver</option>
+        <option value="Tighe">Tighe</option>
+        <option value="__other__">+ Other (type a name)</option>
+      </select>
+      <input type="text" id="sb-name" placeholder="Type name..." style="display:none;margin-top:6px">
+    </div>
+    <div class="field">
+      <label>Shift Type</label>
+      <input type="text" id="sb-shift" placeholder="D = Day shift · N = Night shift">
+      <div class="hint">D → Day shift &nbsp;·&nbsp; N → Night shift</div>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="sb-date">
+    </div>
+    <div class="field">
+      <label>Notes (optional)</label>
+      <input type="text" id="sb-notes" placeholder="Any extra details...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Cancel</button>
+      <button class="btn-save" onclick="saveStandby()">Save Standby</button>
+    </div>
+  </div>
+</div>
+
+<!-- REC LEAVE MODAL -->
+<div class="leave-modal-overlay" id="leave-modal">
+  <div class="leave-modal">
+    <div class="leave-modal-head">
+      <div class="leave-modal-handle"></div>
+      <div class="leave-modal-title">Recreation Leave Schedule</div>
+      <div class="leave-modal-sub">Group A2 · Canham, Jeremy</div>
+    </div>
+    <div class="leave-next-banner" id="leave-next-banner">
+      <div>
+        <div class="leave-next-label">Next Leave Period</div>
+        <div class="leave-next-dates" id="leave-next-dates">—</div>
+        <div class="leave-next-dur" id="leave-next-dur"></div>
+      </div>
+      <div class="leave-next-countdown">
+        <div class="leave-countdown-num" id="leave-countdown-num">—</div>
+        <div class="leave-countdown-lbl" id="leave-countdown-lbl">days away</div>
+      </div>
+    </div>
+    <div class="leave-scroll">
+      <table class="leave-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Start</th>
+            <th>Return</th>
+            <th style="text-align:center">Days</th>
+            <th style="text-align:center">Status</th>
+          </tr>
+        </thead>
+        <tbody id="leave-tbody"></tbody>
+      </table>
+    </div>
+    <div class="leave-modal-footer">
+      <button class="btn-leave-close" onclick="closeLeaveModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- BALANCES MODAL -->
+<div class="bal-modal-overlay" id="bal-modal">
+  <div class="bal-modal">
+    <div class="bal-modal-head">
+      <div class="bal-modal-handle"></div>
+      <div class="bal-modal-title">Leave Balances</div>
+      <div class="bal-modal-sub">LSL · Retention Leave · Public Holidays</div>
+      <div class="bal-tabs">
+        <button class="bal-tab active" id="bal-tab-lsl" onclick="switchBalTab('lsl')">LSL</button>
+        <button class="bal-tab" id="bal-tab-ret" onclick="switchBalTab('ret')">Ret Leave</button>
+        <button class="bal-tab" id="bal-tab-phl" onclick="switchBalTab('phl')">PHL</button>
+        <button class="bal-tab" id="bal-tab-sick" onclick="switchBalTab('sick')">Sick Leave</button>
+      </div>
+    </div>
+    <div class="bal-scroll" id="bal-scroll">
+      <!-- filled by JS -->
+    </div>
+    <div class="bal-modal-footer">
+      <button class="btn-bal-close" onclick="closeBalancesModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+<datalist id="names-list">
+  <option value="Boss">
+  <option value="Dingo">
+  <option value="Harry">
+  <option value="Hutchy">
+  <option value="Hyde">
+  <option value="Kerwick">
+  <option value="Oliver">
+  <option value="Tighe">
+</datalist>
+
+<script>
+const INITIAL = [
+  {id:1,name:"Tighe",shift:"Day shift",date:"2024-03-22",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:2,name:"Harry",shift:"Night shift",date:"2024-04-09",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:3,name:"Harry",shift:"Night shift",date:"2024-04-17",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:4,name:"Hyde",shift:"Day shift",date:"2024-04-24",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:5,name:"Harry",shift:"Night shift",date:"2024-05-19",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:6,name:"Harry",shift:"Night shift",date:"2024-05-27",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:7,name:"Harry",shift:"Night shift",date:"2024-06-04",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:8,name:"Hyde",shift:"Night shift",date:"2025-01-14",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:9,name:"Harry",shift:"Day shift",date:"2025-01-20",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:10,name:"Oliver",shift:"Day shift",date:"2025-02-21",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:11,name:"Boss",shift:"Night shift",date:"2025-02-23",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:12,name:"Hyde",shift:"Night shift",date:"2025-03-11",type:"owed",notes:"",calAdded:true,upcoming:false},
+  {id:13,name:"Tighe",shift:"Day shift",date:"2025-01-12",type:"owe",notes:"",calAdded:true,upcoming:false},
+  {id:14,name:"Hutchy",shift:"Night shift",date:"2025-02-28",type:"owe",notes:"",calAdded:true,upcoming:false},
+  {id:15,name:"Hutchy",shift:"Night shift",date:"2025-03-04",type:"owe",notes:"",calAdded:true,upcoming:false},
+];
+
+let shifts=[], history=[], histOpen=false, editId=null, curUpType="owe", curSbType="owe";
+
+function save(){try{localStorage.setItem("ams-shifts",JSON.stringify(shifts));localStorage.setItem("ams-history",JSON.stringify(history));}catch(e){}}
+
+function backupData(){
+  const date=new Date();
+  const stamp=date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
+  const filename="samfs-backup-"+stamp+".json";
+  const balances=loadBalances();
+  const payload=JSON.stringify({shifts,history,balances,exportedAt:date.toISOString()},null,2);
+  const blob=new Blob([payload],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},1000);
+  showToast("✓ Saved as "+filename,3500);
+}
+function restoreFromFile(e){
+  const file=e.target.files[0];
+  if(!file){return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(!parsed.shifts||!Array.isArray(parsed.shifts))throw new Error("Invalid format");
+      shifts=parsed.shifts;
+      history=parsed.history||[];
+      if(parsed.balances){saveBalances(parsed.balances);}
+      save();
+      render();
+      updateBalancesBtn();
+      showToast("✓ Restored — "+shifts.length+" shifts + leave balances loaded",4000);
+    }catch(err){
+      showToast("⚠ Couldn't read that file — make sure it's a SAMFS backup",4000);
+    }
+    e.target.value="";
+  };
+  reader.readAsText(file);
+}
+
+function migrateOldKeys(){
+  const oldKeys=[["ams-shifts-v6","ams-history-v6"],["ams-shifts-v5","ams-history-v5"],["ams-shifts-v4","ams-history-v4"]];
+  if(localStorage.getItem("ams-shifts"))return; // already on stable key
+  for(const[sk,hk] of oldKeys){
+    const s=localStorage.getItem(sk);const h=localStorage.getItem(hk);
+    if(s){localStorage.setItem("ams-shifts",s);if(h)localStorage.setItem("ams-history",h);
+    oldKeys.forEach(([a,b])=>{localStorage.removeItem(a);localStorage.removeItem(b);});
+    return;}
+  }
+}
+function load(){migrateOldKeys();try{const s=localStorage.getItem("ams-shifts");const h=localStorage.getItem("ams-history");shifts=s?JSON.parse(s):[...INITIAL];history=h?JSON.parse(h):[];if(!s)save();}catch{shifts=[...INITIAL];history=[];}checkExpiredUpcoming();render();}
+
+const fmt=(d)=>{if(!d)return"";const[y,m,day]=d.split("-");const mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return`${parseInt(day)} ${mo[parseInt(m)-1]} ${y}`;};
+const today=()=>new Date().toISOString().split("T")[0];
+const daysUntil=(d)=>{const n=new Date();n.setHours(0,0,0,0);const x=new Date(d+"T00:00:00");x.setHours(0,0,0,0);return Math.round((x-n)/86400000);};
+const getShiftType=(v)=>{const u=v.trim().toUpperCase();if(u==="D")return"day";if(u==="N")return"night";return null;};
+const shiftLabel=(s)=>{if(s==="D"||s==="Day shift")return"Day shift";if(s==="N"||s==="Night shift")return"Night shift";return s;};
+const shiftBadge=(s)=>{const l=shiftLabel(s);if(l==="Day shift")return`<span class="card-shift-badge badge-day">Day</span>`;if(l==="Night shift")return`<span class="card-shift-badge badge-night">Night</span>`;return`<span class="card-shift-badge badge-other">${l}</span>`;};
+const calTitle=(name,type,st)=>`Fire - ${st==="day"?"Day shift":"Night shift"} (${type==="owe"?"standby for":"standby by"} ${name})`;
+function calTimes(date,st){if(st==="day")return{start:`${date}T07:00:00+09:30`,end:`${date}T17:00:00+09:30`};const nx=new Date(date+"T00:00:00");nx.setDate(nx.getDate()+1);const nd=nx.toISOString().split("T")[0];return{start:`${date}T17:00:00+09:30`,end:`${nd}T07:00:00+09:30`};}
+function showToast(msg,dur=3000){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),dur);}
+
+function getSorted(list){
+  const f=document.getElementById("filter-in").value.toLowerCase();
+  const s=document.getElementById("sort-sel").value;
+  let c=f?list.filter(x=>x.name.toLowerCase().includes(f)):[...list];
+  if(s==="date-asc")c.sort((a,b)=>a.date.localeCompare(b.date));
+  if(s==="date-desc")c.sort((a,b)=>b.date.localeCompare(a.date));
+  if(s==="name")c.sort((a,b)=>a.name.localeCompare(b.name));
+  return c;
+}
+
+function upcomingCardHTML(s){
+  const d=daysUntil(s.date);
+  const dl=d===0?"Today":d===1?"Tomorrow":`${d} days away`;
+  return`<div class="card upcoming-card upcoming-${s.type}">
+    <div class="upcoming-tag">${dl}</div>
+    <div class="card-top"><span class="card-name">${s.name}</span>${shiftBadge(s.shift)}</div>
+    <div class="card-date">${fmt(s.date)}</div>
+    ${s.notes?`<div class="card-notes">${s.notes}</div>`:""}
+    ${s.calAdded?`<div class="cal-tag">✓ In calendar</div>`:""}
+    <div class="card-actions">
+      <button class="btn-done" onclick="markDone(${s.id})">✓ Done</button>
+      <button class="btn-icon-sm" onclick="openEditUpcoming(${s.id})">✎</button>
+      <button class="btn-icon-sm" onclick="delShift(${s.id})">✕</button>
+    </div>
+  </div>`;}
+
+function pastCardHTML(s){
+  return`<div class="card ${s.type}">
+    <div class="card-top"><span class="card-name">${s.name}</span>${shiftBadge(s.shift)}</div>
+    <div class="card-date">${fmt(s.date)}</div>
+    ${s.notes?`<div class="card-notes">${s.notes}</div>`:""}
+    ${s.calAdded?`<div class="cal-tag">✓ In calendar</div>`:""}
+    <div class="card-actions">
+      <button class="btn-paid-back" onclick="markPaid(${s.id})">✓ Paid Back</button>
+      <button class="btn-icon-sm" onclick="openEditStandby(${s.id})">✎</button>
+      <button class="btn-icon-sm" onclick="delShift(${s.id})">✕</button>
+    </div>
+  </div>`;}
+
+function histCardHTML(s){
+  const tl=s.type==="owe"?"I owed them":"They owed me";
+  return`<div class="hist-card ${s.type}">
+    <div class="card-top"><span class="card-name">${s.name}</span>${shiftBadge(s.shift)}</div>
+    <div class="card-date">${fmt(s.date)}</div>
+    ${s.notes?`<div class="card-notes">${s.notes}</div>`:""}
+    <div class="settled-tag">Settled ${fmt(s.paidDate)} · ${tl}</div>
+    <div class="hist-actions">
+      <button class="btn-restore" onclick="restoreShift(${s.id})">Restore</button>
+      <button class="btn-purge" onclick="purgeHist(${s.id})">Remove</button>
+    </div>
+  </div>`;}
+
+function render(){
+  const sorted=getSorted(shifts);
+  const upcoming=sorted.filter(s=>s.upcoming===true);
+  const past=sorted.filter(s=>!s.upcoming);
+  const upOwe=upcoming.filter(s=>s.type==="owe");
+  const upOwed=upcoming.filter(s=>s.type==="owed");
+  const pastOwe=past.filter(s=>s.type==="owe");
+  const pastOwed=past.filter(s=>s.type==="owed");
+
+  // Header pills
+  document.getElementById("header-pills").innerHTML=`
+    <div class="header-pill"><span class="header-dot" style="background:#d97706"></span>${upcoming.length}</div>
+    <div class="header-pill"><span class="header-dot" style="background:#C00000"></span>${pastOwe.length}</div>
+    <div class="header-pill"><span class="header-dot" style="background:#0d7a52"></span>${pastOwed.length}</div>`;
+
+  // Upcoming
+  const us=document.getElementById("upcoming-section");
+  if(upcoming.length>0){
+    us.style.display="block";
+    document.getElementById("upcoming-badge").textContent=upcoming.length;
+    document.getElementById("up-owe-badge").textContent=upOwe.length;
+    document.getElementById("up-owed-badge").textContent=upOwed.length;
+    document.getElementById("up-owe-list").innerHTML=upOwe.length?upOwe.map(upcomingCardHTML).join(""):`<div class="empty-state">None scheduled</div>`;
+    document.getElementById("up-owed-list").innerHTML=upOwed.length?upOwed.map(upcomingCardHTML).join(""):`<div class="empty-state">None scheduled</div>`;
+  }else{us.style.display="none";}
+
+  // Past
+  document.getElementById("past-badge").textContent=past.length;
+  document.getElementById("past-cols").innerHTML=`
+    <div>
+      <div class="col-label" style="color:var(--owe-text)">I Owe <span class="col-badge">${pastOwe.length}</span></div>
+      ${pastOwe.length?pastOwe.map(pastCardHTML).join(""):`<div class="empty-state">Nothing outstanding</div>`}
+    </div>
+    <div>
+      <div class="col-label" style="color:var(--owed-text)">Owed to Me <span class="col-badge">${pastOwed.length}</span></div>
+      ${pastOwed.length?pastOwed.map(pastCardHTML).join(""):`<div class="empty-state">Nothing outstanding</div>`}
+    </div>`;
+
+  // History
+  const hw=document.getElementById("hist-wrap");
+  if(history.length>0){
+    hw.style.display="block";
+    document.getElementById("hist-count").textContent=`(${history.length})`;
+    if(histOpen)document.getElementById("hist-grid").innerHTML=history.map(histCardHTML).join("");
+  }else{hw.style.display="none";}
+}
+
+function markDone(id){
+  const s=shifts.find(x=>x.id===id);
+  if(!s)return;
+  resolveUpcoming(s);
+  save();render();
+}
+
+// "owe"  = I did a shift FOR them
+//   check: do I already owe them something outstanding?
+//   yes → settle it (I just paid it back by doing this shift)
+//   no  → record them owing ME a shift
+//
+// "owed" = They did a shift for ME
+//   check: do they already owe me something outstanding?
+//   yes → settle it (they just paid it back by doing this shift)
+//   no  → record ME owing THEM a shift
+function resolveUpcoming(s){
+  const checkType  = s.type;              // look for existing debt on SAME side
+  const recordType = s.type==="owe"?"owed":"owe"; // new entry goes on OPPOSITE side
+
+  const idx=shifts.findIndex(x=>!x.upcoming&&x.name===s.name&&x.type===checkType);
+
+  if(idx!==-1){
+    const matched=shifts[idx];
+    history.unshift({...matched,paidDate:today(),settledNote:"Paid back via shift on "+fmt(s.date)});
+    shifts.splice(idx,1);
+    shifts=shifts.filter(x=>x.id!==s.id);
+    const msg=s.type==="owe"
+      ?"✓ Settled — your debt to "+s.name+" is cleared"
+      :"✓ Settled — "+s.name+"\'s debt to you is cleared";
+    showToast(msg,4000);
+  } else {
+    const newEntry={...s,id:Date.now(),upcoming:false,type:recordType,
+      notes:(s.notes?s.notes+" · ":"")+"Recorded from upcoming shift "+fmt(s.date)};
+    shifts=shifts.filter(x=>x.id!==s.id);
+    shifts.push(newEntry);
+    const msg=s.type==="owe"
+      ?"✓ Done — "+s.name+" now owes you a shift"
+      :"✓ Done — you now owe "+s.name+" a shift";
+    showToast(msg,4000);
+  }
+}
+
+function checkExpiredUpcoming(){
+  const todayStr=today();
+  const expired=shifts.filter(s=>s.upcoming&&s.date<todayStr);
+  if(expired.length===0)return;
+  expired.forEach(s=>resolveUpcoming(s));
+  save();
+}
+
+function markPaid(id){const s=shifts.find(x=>x.id===id);history.unshift({...s,paidDate:today()});shifts=shifts.filter(x=>x.id!==id);save();render();showToast("✓ Marked as paid back");}
+function restoreShift(id){const s=history.find(x=>x.id===id);const{paidDate,...orig}=s;shifts.push({...orig,id:Date.now()});history=history.filter(x=>x.id!==id);save();render();showToast("Restored");}
+function purgeHist(id){history=history.filter(x=>x.id!==id);save();render();}
+function clearHist(){if(!confirm("Delete all history?"))return;history=[];save();render();}
+function delShift(id){if(!confirm("Delete this entry?"))return;shifts=shifts.filter(x=>x.id!==id);save();render();}
+
+function toggleHist(){
+  histOpen=!histOpen;
+  document.getElementById("hist-grid").className="hist-grid"+(histOpen?" open":"");
+  document.getElementById("hist-chev").className="hist-chev"+(histOpen?" open":"");
+  if(histOpen)document.getElementById("hist-grid").innerHTML=history.map(histCardHTML).join("");
+}
+
+// UPCOMING MODAL
+function handleUpName(){
+  const sel=document.getElementById("up-name-sel");
+  const inp=document.getElementById("up-name");
+  if(sel.value==="__other__"){inp.style.display="block";inp.value="";inp.focus();}
+  else{inp.style.display="none";inp.value=sel.value;}
+  updateUpPreview();
+}
+function handleSbName(){
+  const sel=document.getElementById("sb-name-sel");
+  const inp=document.getElementById("sb-name");
+  if(sel.value==="__other__"){inp.style.display="block";inp.value="";inp.focus();}
+  else{inp.style.display="none";inp.value=sel.value;}
+}
+function getUpName(){const sel=document.getElementById("up-name-sel");if(sel.value==="__other__"||sel.value==="")return document.getElementById("up-name").value.trim();return sel.value;}
+function getSbName(){const sel=document.getElementById("sb-name-sel");if(sel.value==="__other__"||sel.value==="")return document.getElementById("sb-name").value.trim();return sel.value;}
+function resetUpNameField(name=""){
+  const sel=document.getElementById("up-name-sel");const inp=document.getElementById("up-name");
+  const known=["Boss","Dingo","Harry","Hutchy","Hyde","Kerwick","Oliver","Tighe"];
+  if(name&&!known.includes(name)){sel.value="__other__";inp.style.display="block";inp.value=name;}
+  else{sel.value=name||"";inp.style.display="none";inp.value=name;}
+}
+function resetSbNameField(name=""){
+  const sel=document.getElementById("sb-name-sel");const inp=document.getElementById("sb-name");
+  const known=["Boss","Dingo","Harry","Hutchy","Hyde","Kerwick","Oliver","Tighe"];
+  if(name&&!known.includes(name)){sel.value="__other__";inp.style.display="block";inp.value=name;}
+  else{sel.value=name||"";inp.style.display="none";inp.value=name;}
+}
+function openUpcomingModal(id=null){
+  editId=id;
+  if(id){const s=shifts.find(x=>x.id===id);resetUpNameField(s.name);document.getElementById("up-shift").value=s.shift;document.getElementById("up-date").value=s.date;document.getElementById("up-notes").value=s.notes||"";setUpType(s.type);}
+  else{resetUpNameField();document.getElementById("up-shift").value="";document.getElementById("up-date").value="";document.getElementById("up-notes").value="";setUpType("owe");}
+  document.getElementById("up-cal-preview").style.display="none";
+  document.getElementById("upcoming-modal").classList.add("open");
+  updateUpPreview();
+}
+function openEditUpcoming(id){openUpcomingModal(id);}
+
+function setUpType(t){
+  curUpType=t;
+  document.getElementById("up-btn-owe").className="toggle-btn"+(t==="owe"?" active-owe":"");
+  document.getElementById("up-btn-owed").className="toggle-btn"+(t==="owed"?" active-owed":"");
+  updateUpPreview();
+}
+
+function updateUpPreview(){
+  const name=getUpName()||"Name";
+  const shiftVal=document.getElementById("up-shift").value;
+  const date=document.getElementById("up-date").value;
+  const st=getShiftType(shiftVal);
+  const box=document.getElementById("up-cal-preview");
+  if(st&&date){
+    box.style.display="block";
+    document.getElementById("up-cal-title").textContent=calTitle(name,curUpType,st);
+    document.getElementById("up-cal-times").textContent=fmt(date)+" · "+(st==="day"?"07:00 – 17:00":"17:00 – 07:00 next day");
+  }else{box.style.display="none";}
+}
+
+function saveUpcoming(){
+  const name=getUpName();
+  const shiftVal=document.getElementById("up-shift").value.trim();
+  const date=document.getElementById("up-date").value;
+  const notes=document.getElementById("up-notes").value.trim();
+  if(!name||!shiftVal||!date){alert("Please fill in Name, Shift Type and Date.");return;}
+  const st=getShiftType(shiftVal);
+  const displayShift=st==="day"?"Day shift":st==="night"?"Night shift":shiftVal;
+  const entry={id:editId||Date.now(),name,shift:displayShift,date,notes,type:curUpType,calAdded:!!st,upcoming:true};
+  if(editId)shifts=shifts.map(s=>s.id===editId?entry:s);else shifts.push(entry);
+  save();closeModals();render();
+  if(st){
+    const title=calTitle(name,curUpType,st);
+    const{start,end}=calTimes(date,st);
+    const msg=`Please add this to my Google Calendar: Title: "${title}", Start: ${start}, End: ${end}`;
+    const claudeUrl=`https://claude.ai/new?q=${encodeURIComponent(msg)}`;
+    showToast("✓ Saved — opening Claude to add to calendar",2000);
+    setTimeout(()=>window.open(claudeUrl,"_blank"),600);
+  }else{showToast("✓ Upcoming shift saved");}
+}
+
+// STANDBY MODAL
+function openStandbyModal(id=null){
+  editId=id;
+  document.getElementById("sb-title").textContent=id?"Edit Standby":"Record Standby";
+  if(id){const s=shifts.find(x=>x.id===id);resetSbNameField(s.name);document.getElementById("sb-shift").value=s.shift;document.getElementById("sb-date").value=s.date;document.getElementById("sb-notes").value=s.notes||"";setSbType(s.type);}
+  else{resetSbNameField();document.getElementById("sb-shift").value="";document.getElementById("sb-date").value="";document.getElementById("sb-notes").value="";setSbType("owe");}
+  document.getElementById("standby-modal").classList.add("open");
+}
+function openEditStandby(id){openStandbyModal(id);}
+
+function setSbType(t){
+  curSbType=t;
+  document.getElementById("sb-btn-owe").className="toggle-btn"+(t==="owe"?" active-owe":"");
+  document.getElementById("sb-btn-owed").className="toggle-btn"+(t==="owed"?" active-owed":"");
+}
+
+function saveStandby(){
+  const name=getSbName();
+  const shiftVal=document.getElementById("sb-shift").value.trim();
+  const date=document.getElementById("sb-date").value;
+  const notes=document.getElementById("sb-notes").value.trim();
+  if(!name||!shiftVal||!date){alert("Please fill in Name, Shift Type and Date.");return;}
+  const st=getShiftType(shiftVal);
+  const displayShift=st==="day"?"Day shift":st==="night"?"Night shift":shiftVal;
+  const entry={id:editId||Date.now(),name,shift:displayShift,date,notes,type:curSbType,calAdded:false,upcoming:false};
+  if(editId)shifts=shifts.map(s=>s.id===editId?entry:s);else shifts.push(entry);
+  save();closeModals();render();showToast("✓ Standby recorded");
+}
+
+function closeModals(){
+  document.getElementById("upcoming-modal").classList.remove("open");
+  document.getElementById("standby-modal").classList.remove("open");
+  editId=null;
+}
+
+document.getElementById("upcoming-modal").addEventListener("click",function(e){if(e.target===this)closeModals();});
+document.getElementById("standby-modal").addEventListener("click",function(e){if(e.target===this)closeModals();});
+if("serviceWorker"in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+
+// ── REC LEAVE ────────────────────────────────────────────────
+const LEAVE_DATA = [
+  { start: "2026-05-15", ret: "2026-06-16" },
+  { start: "2026-12-09", ret: "2027-01-10" },
+  { start: "2027-07-05", ret: "2027-08-06" },
+  { start: "2028-01-29", ret: "2028-03-01" },
+  { start: "2028-08-24", ret: "2028-09-25" },
+  { start: "2029-03-20", ret: "2029-04-21" },
+  { start: "2029-10-14", ret: "2029-11-15" },
+  { start: "2030-05-10", ret: "2030-06-11" },
+  { start: "2030-12-04", ret: "2031-01-05" },
+  { start: "2031-06-30", ret: "2031-08-01" },
+  { start: "2032-01-24", ret: "2032-02-25" },
+  { start: "2032-08-19", ret: "2032-09-20" },
+  { start: "2033-03-15", ret: "2033-04-16" },
+  { start: "2033-10-09", ret: "2033-11-10" },
+  { start: "2034-05-05", ret: "2034-06-06" },
+  { start: "2034-11-29", ret: "2034-12-31" },
+  { start: "2035-06-25", ret: "2035-07-27" },
+  { start: "2036-01-19", ret: "2036-02-20" },
+  { start: "2036-08-14", ret: "2036-09-15" },
+  { start: "2037-03-10", ret: "2037-04-11" },
+  { start: "2037-10-04", ret: "2037-11-05" },
+];
+
+const LV_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function lvFmt(d){
+  const [y,m,day]=d.split("-");
+  return `${parseInt(day)} ${LV_MONTHS[parseInt(m)-1]} ${y}`;
+}
+function lvDaysBetween(a,b){return Math.round((new Date(b)-new Date(a))/86400000);}
+function lvDaysUntil(d){const n=new Date();n.setHours(0,0,0,0);const x=new Date(d+"T00:00:00");x.setHours(0,0,0,0);return Math.round((x-n)/86400000);}
+function lvStatus(start,ret){
+  const now=new Date();now.setHours(0,0,0,0);
+  const s=new Date(start+"T00:00:00");const r=new Date(ret+"T00:00:00");
+  if(r<now)return"past";
+  if(s<=now&&r>=now)return"current";
+  return"future";
+}
+function lvNextIndex(){
+  for(let i=0;i<LEAVE_DATA.length;i++){
+    const st=lvStatus(LEAVE_DATA[i].start,LEAVE_DATA[i].ret);
+    if(st==="current"||st==="future")return i;
+  }
+  return -1;
+}
+
+function initLeaveBtn(){
+  const ni=lvNextIndex();
+  const sub=document.getElementById("leave-btn-sub");
+  if(ni===-1){sub.textContent="All leave taken";return;}
+  const next=LEAVE_DATA[ni];
+  const st=lvStatus(next.start,next.ret);
+  if(st==="current"){sub.textContent="On leave now";}
+  else{
+    const d=lvDaysUntil(next.start);
+    sub.textContent=lvFmt(next.start)+" · "+d+" days away";
+  }
+}
+
+function openLeaveModal(){
+  const ni=lvNextIndex();
+  // Populate next banner
+  if(ni!==-1){
+    const next=LEAVE_DATA[ni];
+    const st=lvStatus(next.start,next.ret);
+    document.getElementById("leave-next-dates").textContent=lvFmt(next.start)+" → "+lvFmt(next.ret);
+    document.getElementById("leave-next-dur").textContent=lvDaysBetween(next.start,next.ret)+" days";
+    if(st==="current"){
+      document.getElementById("leave-countdown-num").textContent="Now";
+      document.getElementById("leave-countdown-lbl").textContent="on leave";
+    } else {
+      document.getElementById("leave-countdown-num").textContent=lvDaysUntil(next.start);
+      document.getElementById("leave-countdown-lbl").textContent="days away";
+    }
+  } else {
+    document.getElementById("leave-next-banner").style.display="none";
+  }
+  // Build table
+  let rows="";
+  LEAVE_DATA.forEach((item,i)=>{
+    const st=lvStatus(item.start,item.ret);
+    const dur=lvDaysBetween(item.start,item.ret);
+    let rowClass="",badge="";
+    if(st==="past"){
+      rowClass="lv-past";
+      badge=`<span class="lv-badge lv-badge-past">Done</span>`;
+    } else if(st==="current"){
+      rowClass="lv-current";
+      badge=`<span class="lv-badge lv-badge-current">On Leave</span>`;
+    } else if(i===ni){
+      rowClass="lv-next";
+      badge=`<span class="lv-badge lv-badge-next">Next</span>`;
+    } else {
+      badge=`<span class="lv-badge lv-badge-future">Upcoming</span>`;
+    }
+    rows+=`<tr class="${rowClass}">
+      <td style="font-size:0.7rem;color:var(--text-3);font-weight:600">${i+1}</td>
+      <td>${lvFmt(item.start)}</td>
+      <td>${lvFmt(item.ret)}</td>
+      <td style="text-align:center;font-size:0.75rem;color:var(--text-2)">${dur}</td>
+      <td style="text-align:center">${badge}</td>
+    </tr>`;
+  });
+  document.getElementById("leave-tbody").innerHTML=rows;
+  document.getElementById("leave-modal").classList.add("open");
+}
+
+function closeLeaveModal(){
+  document.getElementById("leave-modal").classList.remove("open");
+}
+
+document.getElementById("leave-modal").addEventListener("click",function(e){if(e.target===this)closeLeaveModal();});
+
+// Init leave button subtitle on load
+initLeaveBtn();
+
+// ── LEAVE BALANCES ───────────────────────────────────────────
+// Storage keys
+const BAL_KEY = "ams-balances";
+
+// Default state
+function defaultBalances() {
+  return {
+    lsl:  { base: 0, log: [] },   // days
+    ret:  { base: 0, log: [] },   // hours
+    phl:  { base: 0, log: [] },   // days
+    sick: { base: 0, log: [] },   // hours
+  };
+}
+
+function loadBalances() {
+  try {
+    const raw = localStorage.getItem(BAL_KEY);
+    const b = raw ? JSON.parse(raw) : defaultBalances();
+    // Ensure all keys exist (handles data saved before sick leave was added)
+    if (!b.lsl)  b.lsl  = { base: 0, log: [] };
+    if (!b.ret)  b.ret  = { base: 0, log: [] };
+    if (!b.phl)  b.phl  = { base: 0, log: [] };
+    if (!b.sick) b.sick = { base: 0, log: [] };
+    return b;
+  } catch(e) { return defaultBalances(); }
+}
+function saveBalances(b) {
+  try { localStorage.setItem(BAL_KEY, JSON.stringify(b)); } catch(e) {}
+}
+
+// ── ACCRUAL CALCULATIONS ─────────────────────────────────────
+// LSL: 12 days added on each 26 March since base was set
+// We store a baseDate so we can count how many 26-Mar events have passed
+function lslAccrued(b) {
+  // Count 26 March anniversaries from baseDate to today
+  if (!b.baseDate) return 0;
+  const base = new Date(b.baseDate);
+  const now  = new Date(); now.setHours(0,0,0,0);
+  let count = 0;
+  let y = base.getFullYear();
+  // Start checking from the year of base date
+  while (true) {
+    const march26 = new Date(y, 2, 26); // month is 0-indexed
+    if (march26 > now) break;
+    if (march26 > base) count++;
+    y++;
+  }
+  return count * 12;
+}
+
+function lslTotal(b) {
+  const deductions = b.log.filter(e => e.amt < 0).reduce((s,e) => s + Math.abs(e.amt), 0);
+  const additions  = b.log.filter(e => e.amt > 0).reduce((s,e) => s + e.amt, 0);
+  return b.base + lslAccrued(b) + additions - deductions;
+}
+
+// Ret Leave: 32 hrs/year from baseDate, prorated daily
+function retAccrued(b) {
+  if (!b.baseDate) return 0;
+  const base = new Date(b.baseDate);
+  const now  = new Date(); now.setHours(0,0,0,0);
+  const days = Math.max(0, Math.floor((now - base) / 86400000));
+  return Math.floor((days / 365) * 32 * 10) / 10; // 1dp
+}
+
+function retTotal(b) {
+  const deductions = b.log.filter(e => e.amt < 0).reduce((s,e) => s + Math.abs(e.amt), 0);
+  const additions  = b.log.filter(e => e.amt > 0).reduce((s,e) => s + e.amt, 0);
+  return Math.round((b.base + retAccrued(b) + additions - deductions) * 10) / 10;
+}
+
+function phlTotal(b) {
+  const deductions = b.log.filter(e => e.amt < 0).reduce((s,e) => s + Math.abs(e.amt), 0);
+  const additions  = b.log.filter(e => e.amt > 0).reduce((s,e) => s + e.amt, 0);
+  return Math.round((b.base + additions - deductions) * 10) / 10;
+}
+
+function sickAccrued(b) {
+  if (!b.baseDate) return 0;
+  const base = new Date(b.baseDate);
+  const now  = new Date(); now.setHours(0,0,0,0);
+  let count = 0;
+  let y = base.getFullYear();
+  while (true) {
+    const march26 = new Date(y, 2, 26);
+    if (march26 > now) break;
+    if (march26 > base) count++;
+    y++;
+  }
+  return count * 126;
+}
+
+function sickTotal(b) {
+  const deductions = b.log.filter(e => e.amt < 0).reduce((s,e) => s + Math.abs(e.amt), 0);
+  const additions  = b.log.filter(e => e.amt > 0).reduce((s,e) => s + e.amt, 0);
+  return Math.round((b.base + sickAccrued(b) + additions - deductions) * 10) / 10;
+}
+
+function nextMarch26() {
+  const now = new Date(); now.setHours(0,0,0,0);
+  let y = now.getFullYear();
+  let m26 = new Date(y, 2, 26);
+  if (m26 <= now) m26 = new Date(y + 1, 2, 26);
+  const days = Math.round((m26 - now) / 86400000);
+  return { date: m26, days };
+}
+
+function retDailyRate() { return Math.round((32/365)*100)/100; }
+
+// ── UI ────────────────────────────────────────────────────────
+let curBalTab = "lsl";
+
+function switchBalTab(tab) {
+  curBalTab = tab;
+  ["lsl","ret","phl","sick"].forEach(t => {
+    document.getElementById("bal-tab-"+t).className = "bal-tab" + (t===tab?" active":"");
+  });
+  renderBalTab();
+}
+
+function openBalancesModal() {
+  curBalTab = "lsl";
+  ["lsl","ret","phl","sick"].forEach(t => {
+    document.getElementById("bal-tab-"+t).className = "bal-tab" + (t==="lsl"?" active":"");
+  });
+  renderBalTab();
+  document.getElementById("bal-modal").classList.add("open");
+}
+function closeBalancesModal() {
+  document.getElementById("bal-modal").classList.remove("open");
+}
+document.getElementById("bal-modal").addEventListener("click", function(e){ if(e.target===this) closeBalancesModal(); });
+
+function renderBalTab() {
+  const b = loadBalances();
+  const scroll = document.getElementById("bal-scroll");
+  if (curBalTab === "lsl")  scroll.innerHTML = renderLSL(b.lsl);
+  if (curBalTab === "ret")  scroll.innerHTML = renderRet(b.ret);
+  if (curBalTab === "phl")  scroll.innerHTML = renderPHL(b.phl);
+  if (curBalTab === "sick") scroll.innerHTML = renderSick(b.sick||{base:0,log:[]});
+}
+
+function renderLSL(b) {
+  const total   = lslTotal(b);
+  const accrued = lslAccrued(b);
+  const nm26    = nextMarch26();
+  const hasBase = b.baseDate != null;
+  return `
+    <div class="bal-summary lsl">
+      <div class="bal-summary-top">
+        <div>
+          <div class="bal-summary-label">Long Service Leave</div>
+          <div class="bal-balance-num">${total}</div>
+          <div class="bal-balance-unit">days remaining</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1d4ed8;margin-bottom:3px">Accrued since base</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#1d4ed8">+${accrued} days</div>
+        </div>
+      </div>
+      <div class="bal-accrual-note">Accrues +12 days every 26 March</div>
+      <div class="bal-next-accrual">Next accrual: 26 Mar ${nm26.date.getFullYear()} · ${nm26.days} days away</div>
+    </div>
+    <div style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:6px">Set Base Balance</div>
+    <div class="bal-set-row">
+      <input type="number" id="lsl-base-inp" placeholder="Base days e.g. 24" value="${hasBase?b.base:''}" min="0" step="0.5">
+      <input type="date" id="lsl-base-date" value="${b.baseDate||''}" style="flex:1;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);color:var(--text);font-family:Inter,sans-serif;font-size:0.82rem;padding:8px 10px;outline:none;">
+      <button class="bal-set-btn" onclick="setLSLBase()">Set</button>
+    </div>
+    <div style="font-size:0.65rem;color:var(--text-3);margin-bottom:14px;margin-top:-8px">Enter your current balance and the date it was calculated from</div>
+    <div style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:6px">Record Use / Adjustment</div>
+    <div class="bal-action-row">
+      <input type="number" id="lsl-amt" placeholder="Days" min="0.5" step="0.5">
+      <input type="text" id="lsl-desc" placeholder="Note (optional)" style="flex:2;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);color:var(--text);font-family:Inter,sans-serif;font-size:0.82rem;padding:8px 10px;outline:none;">
+      <button class="bal-deduct-btn" onclick="balRecord('lsl',-1)">− Use</button>
+      <button class="bal-add-btn" onclick="balRecord('lsl',1)">+ Add</button>
+    </div>
+    ${renderLog(b.log, 'lsl', 'days')}
+  `;
+}
+
+function renderRet(b) {
+  const total   = retTotal(b);
+  const accrued = retAccrued(b);
+  const rate    = retDailyRate();
+  const hasBase = b.baseDate != null;
+  return `
+    <div class="bal-summary ret">
+      <div class="bal-summary-top">
+        <div>
+          <div class="bal-summary-label">Retention Leave</div>
+          <div class="bal-balance-num">${total}</div>
+          <div class="bal-balance-unit">hours remaining</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--owed-text);margin-bottom:3px">Accrued since base</div>
+          <div style="font-size:1.1rem;font-weight:700;color:var(--owed-text)">+${accrued} hrs</div>
+        </div>
+      </div>
+      <div class="bal-accrual-note">Accrues at 32 hrs/year (≈ ${rate} hrs/day)</div>
+      <div class="bal-next-accrual">Running total updates daily</div>
+    </div>
+    <div style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:6px">Set Base Balance</div>
+    <div class="bal-set-row">
+      <input type="number" id="ret-base-inp" placeholder="Base hours e.g. 16" value="${hasBase?b.base:''}" min="0" step="0.5">
+      <input type="date" id="ret-base-date" value="${b.baseDate||''}" style="flex:1;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);color:var(--text);font-family:Inter,sans-serif;font-size:0.82rem;padding:8px 10px;outline:none;">
+      <button class="bal-set-btn" onclick="setRetBase()">Set</button>
+    </div>
+    <div style="font-size:0.65rem;color:var(--text-3);margin-bottom:14px;margin-top:-8px">Enter your current balance and the date it was calculated from</div>
+    <div style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:6px">Record Use / Adjustment</div>
+    <div class="bal-action-row">
+      <input type="number" id="ret-amt" placeholder="Hours" min="0.5" step="0.5">
+      <input type="text" id="ret-desc" placeholder="Note (optional)" style="flex:2;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);color:var(--text);font-family:Inter,sans-serif;font-size:0.82rem;padding:8px 10px;outline:none;">
+      <button class="bal-deduct-btn" onclick="balRecord('ret',-1)">− Use</button>
+      <button class="bal-add-btn" onclick="balRecord('ret',1)">+ Add</button>
+    </div>
+    ${renderLog(b.log, 'ret', 'hrs')}
+  `;
+}
+
+function renderPHL(b) {
+  const total = phlTotal(b);
+  return `
+    <div class="bal-summary phl">
+      <div class="bal-summary-top">
+        <div>
+          <div class="bal-summary-label">Public Holidays</div>
+          <div class="bal-balance-num">${total}</div>
+          <div class="bal-balance-unit">days banked</div>
+        </div>
+      </div>
+      <div class="bal-accrual-note">Manually managed in days — add when earned, deduct when taken</div>
+    </div>
+    <div style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:6px">Set Base Balance</div>
+    <div class="bal-set-row">
+      <input type="number" id="phl-base-inp" placeholder="Base days e.g. 3" value="${b.base||''}" min="0" step="0.5">
+      <button class="bal-set-btn" onclick="setPHLBase()">Set</button>
+    </div>
+    <div style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:6px">Record PHL</div>
+    <div class="bal-action-row">
+      <input type="number" id="phl-amt" placeholder="Days" min="0.5" step="0.5">
+      <input type="text" id="phl-desc" placeholder="e.g. ANZAC Day 2026" style="flex:2;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);color:var(--text);font-family:Inter,sans-serif;font-size:0.82rem;padding:8px 10px;outline:none;">
+      <button class="bal-deduct-btn" onclick="balRecord('phl',-1)">− Use</button>
+      <button class="bal-add-btn" onclick="balRecord('phl',1)">+ Add</button>
+    </div>
+    ${renderLog(b.log, 'phl', 'days')}
+  `;
+}
+
+
+function renderSick(b) {
+  const total   = sickTotal(b);
+  const accrued = sickAccrued(b);
+  const nm26    = nextMarch26();
+  const hasBase = b.baseDate != null;
+  const dateVal = b.baseDate || '';
+  const baseVal = hasBase ? b.base : '';
+  let html = '';
+  html += '<div class="bal-summary" style="background:#fdf4ff;border:1px solid #e9d5ff;">';
+  html += '<div class="bal-summary-top">';
+  html += '<div>';
+  html += '<div class="bal-summary-label" style="color:#7c3aed">Sick Leave</div>';
+  html += '<div class="bal-balance-num">' + total + '</div>';
+  html += '<div class="bal-balance-unit">hours remaining</div>';
+  html += '</div>';
+  html += '<div style="text-align:right">';
+  html += '<div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#7c3aed;margin-bottom:3px">Accrued since base</div>';
+  html += '<div style="font-size:1.1rem;font-weight:700;color:#7c3aed">+' + accrued + ' hrs</div>';
+  html += '</div></div>';
+  html += '<div class="bal-accrual-note">Accrues +126 hours every 26 March</div>';
+  html += '<div class="bal-next-accrual" style="color:#7c3aed">Next accrual: 26 Mar ' + nm26.date.getFullYear() + ' · ' + nm26.days + ' days away</div>';
+  html += '</div>';
+  html += '<div style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:6px">Set Base Balance</div>';
+  html += '<div class="bal-set-row">';
+  html += '<input type="number" id="sick-base-inp" placeholder="Base hours e.g. 126" value="' + baseVal + '" min="0" step="0.5">';
+  html += '<input type="date" id="sick-base-date" value="' + dateVal + '" style="flex:1;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);color:var(--text);font-family:Inter,sans-serif;font-size:0.82rem;padding:8px 10px;outline:none;">';
+  html += '<button class="bal-set-btn" onclick="setSickBase()">Set</button>';
+  html += '</div>';
+  html += '<div style="font-size:0.65rem;color:var(--text-3);margin-bottom:14px;margin-top:-8px">Enter your current balance and the date it was calculated from</div>';
+  html += '<div style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:6px">Record Use / Adjustment</div>';
+  html += '<div class="bal-action-row">';
+  html += '<input type="number" id="sick-amt" placeholder="Hours" min="0.5" step="0.5">';
+  html += '<input type="text" id="sick-desc" placeholder="Note (optional)" style="flex:2;background:var(--bg);border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);color:var(--text);font-family:Inter,sans-serif;font-size:0.82rem;padding:8px 10px;outline:none;">';
+  html += '<button class="bal-deduct-btn" onclick="balRecord(&quot;sick&quot;,-1)">− Use</button>';
+  html += '<button class="bal-add-btn" onclick="balRecord(&quot;sick&quot;,1)">+ Add</button>';
+  html += '</div>';
+  html += renderLog(b.log, 'sick', 'hrs');
+  return html;
+}
+
+function setSickBase() {
+  const val = parseFloat(document.getElementById("sick-base-inp").value);
+  const dt  = document.getElementById("sick-base-date").value;
+  if (isNaN(val) || val < 0) { showToast("Enter a valid number of hours"); return; }
+  if (!dt) { showToast("Enter the date this balance was calculated from"); return; }
+  const b = loadBalances();
+  if (!b.sick) b.sick = { base: 0, log: [] };
+  b.sick.base = val; b.sick.baseDate = dt;
+  saveBalances(b); renderBalTab(); showToast("✓ Sick Leave base set");
+  updateBalancesBtn();
+}
+
+function renderLog(log, type, unit) {
+  if (!log || log.length === 0) return `<div class="bal-log-label">History</div><div class="bal-empty">No entries yet</div>`;
+  const entries = [...log].reverse();
+  return `<div class="bal-log-label">History</div>` +
+    entries.map((e,ri) => {
+      const i = log.length - 1 - ri;
+      return `<div class="bal-log-entry">
+        <div>
+          <div class="bal-log-desc">${e.desc||'—'}</div>
+          <div class="bal-log-date">${e.date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="bal-log-amt ${e.amt<0?'neg':'pos'}">${e.amt>0?'+':''}${e.amt} ${unit}</span>
+          <button class="bal-log-del" onclick="balDelEntry('${type}',${i})" title="Delete">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function setLSLBase() {
+  const val = parseFloat(document.getElementById("lsl-base-inp").value);
+  const dt  = document.getElementById("lsl-base-date").value;
+  if (isNaN(val) || val < 0) { showToast("Enter a valid number of days"); return; }
+  if (!dt) { showToast("Enter the date this balance was calculated from"); return; }
+  const b = loadBalances(); b.lsl.base = val; b.lsl.baseDate = dt;
+  saveBalances(b); renderBalTab(); showToast("✓ LSL base set");
+  updateBalancesBtn();
+}
+function setRetBase() {
+  const val = parseFloat(document.getElementById("ret-base-inp").value);
+  const dt  = document.getElementById("ret-base-date").value;
+  if (isNaN(val) || val < 0) { showToast("Enter a valid number of hours"); return; }
+  if (!dt) { showToast("Enter the date this balance was calculated from"); return; }
+  const b = loadBalances(); b.ret.base = val; b.ret.baseDate = dt;
+  saveBalances(b); renderBalTab(); showToast("✓ Retention Leave base set");
+  updateBalancesBtn();
+}
+function setPHLBase() {
+  const val = parseFloat(document.getElementById("phl-base-inp").value);
+  if (isNaN(val) || val < 0) { showToast("Enter a valid number of hours"); return; }
+  const b = loadBalances(); b.phl.base = val;
+  saveBalances(b); renderBalTab(); showToast("✓ PHL base set");
+}
+
+function balRecord(type, dir) {
+  const amt  = parseFloat(document.getElementById(type+"-amt").value);
+  const desc = document.getElementById(type+"-desc").value.trim();
+  if (isNaN(amt) || amt <= 0) { showToast("Enter a valid amount"); return; }
+  const b = loadBalances();
+  b[type].log.push({ amt: dir * amt, desc: desc||( dir<0?"Used":"Added"), date: fmt(today()) });
+  saveBalances(b);
+  document.getElementById(type+"-amt").value = "";
+  document.getElementById(type+"-desc").value = "";
+  renderBalTab();
+  updateBalancesBtn();
+  const unit = (type==='lsl'||type==='phl') ? ' days' : ' hrs'; // ret and sick are hrs
+  showToast(dir < 0 ? "✓ Deducted "+amt+unit : "✓ Added "+amt+unit);
+}
+
+function balDelEntry(type, idx) {
+  if (!confirm("Delete this entry?")) return;
+  const b = loadBalances();
+  b[type].log.splice(idx, 1);
+  saveBalances(b); renderBalTab(); updateBalancesBtn();
+  showToast("Entry deleted");
+}
+
+function updateBalancesBtn() {
+  const b    = loadBalances();
+  const sub  = document.getElementById("balances-btn-sub");
+  const lsl  = lslTotal(b.lsl);
+  const ret  = retTotal(b.ret);
+  const phl  = phlTotal(b.phl);
+  const sick = sickTotal(b.sick||{base:0,log:[]});
+  sub.textContent = `LSL ${lsl}d · Ret ${ret}h · PHL ${phl}d · Sick ${sick}h`;
+}
+
+// Init balances button on load
+updateBalancesBtn();
+// ── END LEAVE BALANCES ────────────────────────────────────────
+
+
+// ── END REC LEAVE ─────────────────────────────────────────────
+
+load();
+</script>
+</body>
+</html>
